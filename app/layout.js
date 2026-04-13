@@ -1,4 +1,17 @@
 import "./globals.css";
+import { DM_Sans, Playfair_Display } from "next/font/google";
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400"],
+  variable: "--font-body"
+});
+
+const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-display"
+});
 
 export const metadata = {
   title: "EVAA",
@@ -11,16 +24,10 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400&family=Playfair+Display:wght@400&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${dmSans.variable} ${playfairDisplay.variable}`} suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   );
 }

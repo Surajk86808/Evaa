@@ -269,7 +269,8 @@ body > canvas {
 }
 
 .hero__meta--left {
-  left: 56px;
+  left: 96px;
+  max-width: 320px;
 }
 
 .hero__meta--left p {
@@ -475,7 +476,7 @@ body > canvas {
 }
 
 .feature-card {
-  min-height: 78vh;
+  min-height: min(78vh, 1000px);
   border: 1px solid var(--color-border);
   background: #000000;
   display: grid;
@@ -527,7 +528,7 @@ body > canvas {
 .avatar-grid {
   padding: 28px 40px 40px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 28px;
   align-content: center;
 }
@@ -537,11 +538,12 @@ body > canvas {
   aspect-ratio: 1;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  background: radial-gradient(circle at 50% 40%, #222222, #111111 62%, #000000);
+  background:
+    radial-gradient(circle at 50% 24%, rgba(255, 255, 255, 0.08), transparent 45%),
+    #000000;
   display: grid;
   place-items: center;
   overflow: hidden;
-  filter: grayscale(100%);
   transition: transform 0.35s ease, border-color 0.35s ease,
     box-shadow 0.35s ease;
 }
@@ -575,15 +577,55 @@ body > canvas {
   color: rgba(255, 255, 255, 0.7);
 }
 
+.avatar-orb__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transform: scale(1.14);
+  background: #000000;
+}
+
+.avatar-orb::selection,
+.avatar-orb__image::selection {
+  background: transparent;
+}
+
+.avatar-orb span {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(10px);
+}
+
+.avatar-orb::before {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  animation: orbPulse 2.4s ease-in-out infinite;
+  z-index: 1;
+}
+
+.avatar-orb::after {
+  inset: 0;
+  border: none;
+  opacity: 1;
+  transform: none;
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.12), transparent 28%, transparent 72%, rgba(0, 0, 0, 0.2)),
+    radial-gradient(circle at center, transparent 62%, rgba(0, 0, 0, 0.28) 100%);
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+
 .avatar-orb:hover {
   transform: scale(1.04);
-  border-color: rgba(255, 255, 255, 0.3);
-  box-shadow: 0 0 32px rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 32px rgba(88, 176, 255, 0.16);
 }
 
 .avatar-orb:hover::after {
-  opacity: 1;
-  transform: scale(1.06);
+  opacity: 0.86;
 }
 
 @keyframes orbPulse {
@@ -929,6 +971,7 @@ body > canvas {
 
   .hero__meta--left {
     left: 24px;
+    max-width: 240px;
   }
 
   .hero__meta--right {
@@ -978,6 +1021,80 @@ body > canvas {
   }
 }
 
+@media (max-width: 768px) {
+  .navbar {
+    height: 68px;
+    padding: 0 18px;
+  }
+
+  .navbar__brand {
+    font-size: 18px;
+    letter-spacing: 4px;
+  }
+
+  .menu-overlay__nav {
+    gap: 22px;
+  }
+
+  .menu-overlay__nav a {
+    font-size: 12px;
+    letter-spacing: 2px;
+  }
+
+  .building,
+  .research {
+    padding: 88px 16px;
+  }
+
+  .section-head {
+    margin-bottom: 32px;
+  }
+
+  .feature-card__copy,
+  .research-card {
+    padding: 28px 20px;
+  }
+
+  .feature-card h2,
+  .section-head h2 {
+    font-size: clamp(28px, 8vw, 40px);
+  }
+
+  .feature-card p:not(.section-tag),
+  .research-card p:not(.research-card__tag) {
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .systems-visual {
+    min-height: 280px;
+  }
+
+  .avatar-grid {
+    padding: 20px;
+    gap: 16px;
+  }
+
+  .research-card h3 {
+    font-size: clamp(24px, 7vw, 34px);
+  }
+
+  .research-card a {
+    margin-top: 22px;
+    font-size: 14px;
+  }
+
+  .footer {
+    padding: 28px 16px 120px;
+    gap: 12px;
+  }
+
+  .footer__col--right {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
 @media (max-width: 640px) {
   .hero {
     min-height: 100svh;
@@ -1004,8 +1121,8 @@ body > canvas {
   }
 
   .avatar-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px;
+    grid-template-columns: 1fr;
+    gap: 14px;
   }
 
   .stats-strip {

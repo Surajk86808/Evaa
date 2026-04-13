@@ -146,7 +146,9 @@ const appendMessage = (text, type) => {
   transcript.appendChild(message)
 
   while (transcript.children.length > 10) {
-    transcript.removeChild(transcript.firstElementChild)
+    const oldestMessage = transcript.firstElementChild
+    if (!oldestMessage) break
+    transcript.removeChild(oldestMessage)
   }
 
   updateChatLayout()

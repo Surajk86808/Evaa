@@ -173,7 +173,11 @@ export function initSite() {
     message.className = `chatbot-message chatbot-message--${type}`;
     message.textContent = text;
     transcript.appendChild(message);
-    while (transcript.children.length > 10) transcript.removeChild(transcript.firstElementChild);
+    while (transcript.children.length > 10) {
+      const oldestMessage = transcript.firstElementChild;
+      if (!oldestMessage) break;
+      transcript.removeChild(oldestMessage);
+    }
     updateChatLayout();
     transcript.scrollTop = transcript.scrollHeight;
   };
@@ -247,14 +251,6 @@ export function initSite() {
 }
 
 function initTypingOverlay(cleanups) {
-  const leftEl = document.getElementById("type-left");
-  const rightEl = document.getElementById("type-right");
-
-  if (!leftEl || !rightEl) return;
-
-  leftEl.textContent = "";
-  rightEl.textContent = "";
-
   const leftLines = [
     "ARTIFICIAL INTELLIGENCE",
     "RESEARCH & VENTURES",
@@ -270,6 +266,8 @@ function initTypingOverlay(cleanups) {
   let destroyed = false;
   const timeouts = new Set();
   const intervals = new Set();
+  let leftEl = null;
+  let rightEl = null;
 
   const scheduleTimeout = (fn, ms) => {
     const id = window.setTimeout(() => {
@@ -361,30 +359,45 @@ function initTypingOverlay(cleanups) {
 
   scanLine.addEventListener("animationend", handleScanEnd);
 
-  const leftTyper = new TypeWriter(leftEl, leftLines, {
-    speed: 60,
-    lineDelay: 400,
-    startDelay: 800,
-    onComplete: () => {
-      if (destroyed) return;
+  scheduleTimeout(() => {
+    leftEl = document.getElementById("type-left");
+    rightEl = document.getElementById("type-right");
 
-      const rightTyper = new TypeWriter(rightEl, rightLines, {
-        speed: 60,
-        lineDelay: 400,
-        startDelay: 300,
-        onComplete: () => {
-          if (destroyed) return;
-          document
-            .querySelectorAll(".vertical-meta")
-            .forEach((element) => element.classList.add("visible"));
-        }
-      });
-
-      rightTyper.start();
+    if (!leftEl || !rightEl) {
+      console.error("Type elements not found");
+      return;
     }
-  });
 
-  leftTyper.start();
+    leftEl.textContent = "";
+    rightEl.textContent = "";
+    leftEl.style.opacity = "1";
+    rightEl.style.opacity = "1";
+
+    const leftTyper = new TypeWriter(leftEl, leftLines, {
+      speed: 55,
+      lineDelay: 350,
+      startDelay: 1000,
+      onComplete: () => {
+        if (destroyed) return;
+
+        const rightTyper = new TypeWriter(rightEl, rightLines, {
+          speed: 55,
+          lineDelay: 350,
+          startDelay: 200,
+          onComplete: () => {
+            if (destroyed) return;
+            document
+              .querySelectorAll(".vertical-meta")
+              .forEach((element) => element.classList.add("visible"));
+          }
+        });
+
+        rightTyper.start();
+      }
+    });
+
+    leftTyper.start();
+  }, 500);
 
   cleanups.push(() => {
     destroyed = true;
@@ -395,8 +408,14 @@ function initTypingOverlay(cleanups) {
     document
       .querySelectorAll(".vertical-meta")
       .forEach((element) => element.classList.remove("visible"));
-    leftEl.textContent = "";
-    rightEl.textContent = "";
+    if (leftEl) {
+      leftEl.textContent = "";
+      leftEl.style.opacity = "";
+    }
+    if (rightEl) {
+      rightEl.textContent = "";
+      rightEl.style.opacity = "";
+    }
   });
 }
 
@@ -558,14 +577,18 @@ function initStats(statsSection, statNumbers, cleanups) {
   const animateCount = (element) => {
     const target = Number(element.dataset.count || 0);
     const suffix = element.dataset.suffix || "";
-    const duration = 2000;
+    const duration = target <= 20 ? 1800 : 2200;
     const startTime = performance.now();
+
+    element.textContent = `0${suffix}`;
+
     const step = (now) => {
       const progress = Math.min((now - startTime) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      element.textContent = `${Math.round(target * eased)}${suffix}`;
+      const nextValue = Math.min(target, Math.floor(progress * (target + 1)));
+      element.textContent = `${nextValue}${suffix}`;
       if (progress < 1) window.requestAnimationFrame(step);
     };
+
     window.requestAnimationFrame(step);
   };
 

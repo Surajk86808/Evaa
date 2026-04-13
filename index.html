@@ -29,35 +29,84 @@
     <style>
       #chat-trigger {
         position: fixed;
-        bottom: 32px;
-        right: 32px;
-        width: 64px;
-        height: 64px;
+        right: 28px;
+        bottom: 28px;
+        width: 88px;
+        height: 88px;
         border-radius: 50%;
         cursor: pointer;
         z-index: 200;
-        border: 2px solid rgba(255, 255, 255, 0.8);
+        border: 3px solid rgba(255, 255, 255, 0.9);
         overflow: hidden;
-        transition: transform 0.2s ease, border-color 0.2s ease;
+        background:
+          radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.18), transparent 45%),
+          #050505;
+        box-shadow:
+          0 18px 40px rgba(0, 0, 0, 0.55),
+          0 0 0 1px rgba(255, 255, 255, 0.12);
+        transition: transform 0.2s ease, border-color 0.2s ease,
+          box-shadow 0.2s ease;
       }
 
       #chat-trigger:hover {
         transform: scale(1.08);
         border-color: #ffffff;
+        box-shadow:
+          0 22px 46px rgba(0, 0, 0, 0.65),
+          0 0 0 1px rgba(255, 255, 255, 0.18);
+      }
+
+      .chat-trigger__label {
+        position: absolute;
+        left: 50%;
+        bottom: calc(100% + 14px);
+        transform: translateX(-50%);
+        padding: 8px 14px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 999px;
+        background: rgba(8, 8, 8, 0.9);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.38);
+        color: rgba(255, 255, 255, 0.9);
+        font-family: "DM Sans", sans-serif;
+        font-size: 11px;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        pointer-events: none;
+      }
+
+      .chat-trigger__label::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 100%;
+        width: 10px;
+        height: 10px;
+        background: rgba(8, 8, 8, 0.9);
+        border-right: 1px solid rgba(255, 255, 255, 0.14);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+        transform: translate(-50%, -55%) rotate(45deg);
       }
 
       #avatar-gif {
         width: 100%;
         height: 100%;
         object-fit: cover;
+        object-position: center 20%;
         border-radius: 50%;
         display: block;
         filter: grayscale(10%);
+        transform: scale(1.24);
+        transition: transform 0.2s ease;
+      }
+
+      #chat-trigger:hover #avatar-gif {
+        transform: scale(1.3);
       }
 
       #trigger-pulse {
         position: absolute;
-        inset: -6px;
+        inset: -8px;
         border-radius: 50%;
         border: 1px solid rgba(255, 255, 255, 0.2);
         animation: triggerPulse 2.5s ease-in-out infinite;
@@ -67,15 +116,15 @@
       @keyframes triggerPulse {
         0% {
           transform: scale(1);
-          opacity: 0.4;
+          opacity: 0.45;
         }
         50% {
-          transform: scale(1.15);
-          opacity: 0.1;
+          transform: scale(1.12);
+          opacity: 0.12;
         }
         100% {
           transform: scale(1);
-          opacity: 0.4;
+          opacity: 0.45;
         }
       }
 
@@ -197,8 +246,8 @@
     <header class="navbar" data-nav>
       <a class="navbar__brand" href="#top">EVAA</a>
       <nav class="navbar__links">
-        <a href="#research">Research</a>
         <a href="#ventures">Ventures</a>
+        <a href="#research">Research</a>
         <a href="#contact">Contact</a>
       </nav>
       <button
@@ -215,8 +264,8 @@
 
     <div class="menu-overlay" data-menu>
       <nav class="menu-overlay__nav">
-        <a href="#research" data-menu-link>Research</a>
         <a href="#ventures" data-menu-link>Ventures</a>
+        <a href="#research" data-menu-link>Research</a>
         <a href="#contact" data-menu-link>Contact</a>
       </nav>
     </div>
@@ -226,7 +275,6 @@
         <div class="hero__background-text" aria-hidden="true">
           WE BUILD WHAT DOESN'T EXIST YET.
         </div>
-        <div class="hero__side-label" aria-hidden="true">EVAA ENTERPRISES</div>
         <div class="hero__meta hero__meta--left" aria-hidden="true">
           <p>AI RESEARCH AND VENTURES</p>
           <p>SINGAPORE · EST. 2024</p>
@@ -337,7 +385,7 @@
               Digital commerce assumes a buyer who reads product pages and
               compares prices. Most of the world buys through relationships.
             </p>
-            <a href="#contact">Read the research →</a>
+            <a href="/research/consumer-behaviour">Read the research →</a>
           </article>
 
           <article class="research-card reveal-up">
@@ -349,7 +397,7 @@
               Information alone doesn't change behaviour — trust does. We're
               studying whether voice-based AI can close that gap.
             </p>
-            <a href="#contact">Read the research →</a>
+            <a href="/research/health-ai">Read the research →</a>
           </article>
         </div>
       </section>
@@ -381,6 +429,7 @@
       aria-label="Open chat"
       data-chat-open
     >
+      <span class="chat-trigger__label">Talk now</span>
       <img
         src="./photos/avatar-loop.gif"
         alt="EVAA AI"
