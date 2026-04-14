@@ -289,13 +289,29 @@
 }
 
 @media (max-width: 768px) {
+  .section {
+    overflow-x: clip;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .row {
     height: 84px;
+    touch-action: pan-y;
   }
 
   .rowStatic {
     gap: 16px;
     padding: 0 20px;
+  }
+
+  .rowMarquee,
+  .rowHovered .rowMarquee {
+    display: none;
+  }
+
+  .rowHovered .rowStatic {
+    opacity: 1;
   }
 
   .label,

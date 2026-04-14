@@ -32,7 +32,9 @@ const AVATAR_ITEMS = [
 ];
 
 export default function HomePage() {
-  useEffect(() => initSite(), []);
+  useEffect(() => {
+    return initSite();
+  }, []);
 
   return (
     <>

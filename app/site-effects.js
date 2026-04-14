@@ -176,6 +176,7 @@ export function initSite() {
     while (transcript.children.length > 10) {
       const oldestMessage = transcript.firstElementChild;
       if (!oldestMessage) break;
+      if (oldestMessage.parentElement !== transcript) break;
       transcript.removeChild(oldestMessage);
     }
     updateChatLayout();
@@ -680,7 +681,6 @@ function initHeroCanvas(cleanups) {
   let disposed = false;
   let demoInterval = 0;
   const onTouchMove = (event) => {
-    event.preventDefault();
     const touch = event.touches[0];
     if (!touch) return;
     pointer.x = (touch.clientX / window.innerWidth) * 2 - 1;
@@ -697,7 +697,7 @@ function initHeroCanvas(cleanups) {
     maskUniforms.pointer.value.y = pointer.y;
   };
   const onTouchEnd = () => {};
-  renderer.domElement.addEventListener("touchmove", onTouchMove, { passive: false });
+  renderer.domElement.addEventListener("touchmove", onTouchMove, { passive: true });
   renderer.domElement.addEventListener("touchstart", onTouchStart, { passive: true });
   renderer.domElement.addEventListener("touchend", onTouchEnd, { passive: true });
 
@@ -731,8 +731,8 @@ function initHeroCanvas(cleanups) {
         texMask: { value: maskRead.texture },
         uAspectCanvas: { value: window.innerWidth / window.innerHeight },
         uAspectImage: { value: getHeroSources(isPortraitMobile).imageAspect },
-        uMobileZoom: { value: 1.0 },
-        uMobileOffsetY: { value: 0.0 },
+        uMobileZoom: { value: isPortraitMobile ? 1.08 : 1.0 },
+        uMobileOffsetY: { value: isPortraitMobile ? -0.03 : 0.0 },
         dottedOffset: { value: new THREE.Vector2(0, 0) },
         realOffset: { value: new THREE.Vector2(0, isPortraitMobile ? 0 : 0.03) },
         dottedScale: { value: 1 },
@@ -752,8 +752,8 @@ function initHeroCanvas(cleanups) {
       const nextMode = portrait ? "portrait" : "landscape";
       const nextSources = getHeroSources(portrait);
       material.uniforms.uAspectImage.value = nextSources.imageAspect;
-      material.uniforms.uMobileZoom.value = 1.0;
-      material.uniforms.uMobileOffsetY.value = 0.0;
+      material.uniforms.uMobileZoom.value = portrait ? 1.08 : 1.0;
+      material.uniforms.uMobileOffsetY.value = portrait ? -0.03 : 0.0;
       material.uniforms.realOffset.value.set(0, portrait ? 0 : 0.03);
       material.uniforms.realScale.value = 1;
 

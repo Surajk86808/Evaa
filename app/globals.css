@@ -9,6 +9,12 @@
   display: block;
 }
 
+@media (max-width: 768px) {
+  .hero-canvas {
+    touch-action: pan-y;
+  }
+}
+
 #chat-trigger {
   position: fixed;
   right: 28px;
@@ -699,7 +705,7 @@
   #hero canvas {
     width: 100% !important;
     height: 100% !important;
-    touch-action: none !important;
+    touch-action: pan-y !important;
   }
 
   #hero .hero__content--desktop {
