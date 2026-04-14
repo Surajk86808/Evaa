@@ -650,7 +650,7 @@ function initHeroCanvas(cleanups) {
 
   if (isMobile) {
     maskUniforms.brushRadius.value = 0.4;
-    maskUniforms.fadeSpeed.value = 0.22;
+    maskUniforms.fadeSpeed.value = 0.34;
   }
 
   const maskMaterial = new THREE.ShaderMaterial({
@@ -792,7 +792,7 @@ function initHeroCanvas(cleanups) {
       maskWrite.setSize(window.innerWidth, window.innerHeight);
       maskUniforms.aspect.value = window.innerWidth / window.innerHeight;
       maskUniforms.brushRadius.value = isMobile ? 0.4 : 0.42;
-      maskUniforms.fadeSpeed.value = isMobile ? 0.22 : 0.42;
+      maskUniforms.fadeSpeed.value = isMobile ? 0.34 : 0.42;
       material.uniforms.uAspectCanvas.value = window.innerWidth / window.innerHeight;
       await updateHeroTextureMode(isPortraitMobile);
     };

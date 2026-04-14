@@ -74,6 +74,11 @@ function MenuItem({ item, isActive, onActivate, onVideoOpen }) {
     touchState.current.active = false;
 
     if (window.innerWidth < 769) {
+      if (shouldOpen && isActive) {
+        onVideoOpen(item);
+        return;
+      }
+
       onActivate(item.id);
       return;
     }
@@ -85,6 +90,11 @@ function MenuItem({ item, isActive, onActivate, onVideoOpen }) {
 
   const handleClick = () => {
     if (window.innerWidth < 769) {
+      if (isActive) {
+        onVideoOpen(item);
+        return;
+      }
+
       onActivate(item.id);
       return;
     }
