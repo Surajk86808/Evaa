@@ -168,7 +168,7 @@ export function initSite() {
   };
 
   const appendMessage = (text, type) => {
-    if (!transcript) return;
+    if (!transcript || !transcript.isConnected) return;
     const message = document.createElement("div");
     message.className = `chatbot-message chatbot-message--${type}`;
     message.textContent = text;
@@ -177,7 +177,7 @@ export function initSite() {
       const oldestMessage = transcript.firstElementChild;
       if (!oldestMessage) break;
       if (oldestMessage.parentElement !== transcript) break;
-      transcript.removeChild(oldestMessage);
+      oldestMessage.remove();
     }
     updateChatLayout();
     transcript.scrollTop = transcript.scrollHeight;
@@ -649,7 +649,7 @@ function initHeroCanvas(cleanups) {
   };
 
   if (isMobile) {
-    maskUniforms.brushRadius.value = 0.5;
+    maskUniforms.brushRadius.value = 0.4;
     maskUniforms.fadeSpeed.value = 0.22;
   }
 
@@ -784,23 +784,6 @@ function initHeroCanvas(cleanups) {
       fitCover(plane, activeDottedTexture);
     };
 
-    if (isMobile) {
-      await new Promise((resolve) => window.setTimeout(resolve, 1200));
-      if (!disposed) {
-        let t = 0;
-        demoInterval = window.setInterval(() => {
-          t += 0.06;
-          maskUniforms.pointer.value.x = Math.sin(t) * 0.5;
-          maskUniforms.pointer.value.y = Math.cos(t * 0.7) * 0.3;
-          if (t > Math.PI * 2.5) {
-            window.clearInterval(demoInterval);
-            demoInterval = 0;
-            maskUniforms.pointer.value.set(10, 10);
-          }
-        }, 40);
-      }
-    }
-
     const handleResize = async () => {
       isMobile = window.innerWidth < 768;
       isPortraitMobile = window.innerWidth < window.innerHeight;
@@ -808,7 +791,7 @@ function initHeroCanvas(cleanups) {
       maskRead.setSize(window.innerWidth, window.innerHeight);
       maskWrite.setSize(window.innerWidth, window.innerHeight);
       maskUniforms.aspect.value = window.innerWidth / window.innerHeight;
-      maskUniforms.brushRadius.value = isMobile ? 0.5 : 0.42;
+      maskUniforms.brushRadius.value = isMobile ? 0.4 : 0.42;
       maskUniforms.fadeSpeed.value = isMobile ? 0.22 : 0.42;
       material.uniforms.uAspectCanvas.value = window.innerWidth / window.innerHeight;
       await updateHeroTextureMode(isPortraitMobile);

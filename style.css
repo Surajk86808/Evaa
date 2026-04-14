@@ -1116,8 +1116,25 @@ input {
   }
 
   .avatar-grid {
-    padding: 20px;
-    gap: 16px;
+    padding: 16px;
+    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-items: center;
+    align-items: start;
+  }
+
+  .avatar-orb {
+    width: min(100%, 140px);
+  }
+
+  .avatar-orb__image {
+    transform: scale(1.04);
+  }
+
+  .avatar-orb span {
+    font-size: 11px;
+    letter-spacing: 2px;
+    padding: 5px 8px;
   }
 
   .research-card h3 {
@@ -1166,8 +1183,8 @@ input {
   }
 
   .avatar-grid {
-    grid-template-columns: 1fr;
-    gap: 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
 
   .chatbot-trigger {

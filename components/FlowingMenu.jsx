@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "./FlowingMenu.module.css";
 
 const ITEMS = [
@@ -34,16 +34,83 @@ const ITEMS = [
   }
 ];
 
-function MenuItem({ item, onVideoOpen }) {
+function MenuItem({ item, isActive, onActivate, onVideoOpen }) {
   const [hovered, setHovered] = useState(false);
+  const touchState = useRef({
+    active: false,
+    moved: false,
+    startX: 0,
+    startY: 0
+  });
+
+  const handleTouchStart = (event) => {
+    const touch = event.touches[0];
+    if (!touch) return;
+    onActivate(item.id);
+
+    touchState.current = {
+      active: true,
+      moved: false,
+      startX: touch.clientX,
+      startY: touch.clientY
+    };
+  };
+
+  const handleTouchMove = (event) => {
+    const touch = event.touches[0];
+    if (!touch || !touchState.current.active) return;
+
+    const deltaX = Math.abs(touch.clientX - touchState.current.startX);
+    const deltaY = Math.abs(touch.clientY - touchState.current.startY);
+
+    if (deltaX > 10 || deltaY > 10) {
+      touchState.current.moved = true;
+      onActivate(item.id);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    const shouldOpen = touchState.current.active && !touchState.current.moved;
+    touchState.current.active = false;
+
+    if (window.innerWidth < 769) {
+      onActivate(item.id);
+      return;
+    }
+
+    if (shouldOpen) {
+      onVideoOpen(item);
+    }
+  };
+
+  const handleClick = () => {
+    if (window.innerWidth < 769) {
+      onActivate(item.id);
+      return;
+    }
+
+    if (touchState.current.moved) {
+      touchState.current.moved = false;
+      return;
+    }
+
+    onVideoOpen(item);
+  };
 
   return (
     <button
       type="button"
-      className={`${styles.row} ${hovered ? styles.rowHovered : ""}`}
+      className={`${styles.row} ${hovered ? styles.rowHovered : ""} ${isActive ? styles.rowActive : ""}`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={() => onVideoOpen(item)}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={() => {
+        touchState.current.active = false;
+        touchState.current.moved = false;
+      }}
+      onClick={handleClick}
       suppressHydrationWarning
     >
       <div className={styles.rowStatic}>
@@ -79,6 +146,8 @@ function MenuItem({ item, onVideoOpen }) {
 export default function FlowingMenu() {
   const [modalItem, setModalItem] = useState(null);
   const [videoFailed, setVideoFailed] = useState(false);
+  const [activeItemId, setActiveItemId] = useState(null);
+  const activeTimerRef = useRef(null);
 
   useEffect(() => {
     if (!modalItem) {
@@ -96,6 +165,27 @@ export default function FlowingMenu() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [modalItem]);
 
+  useEffect(() => {
+    return () => {
+      if (activeTimerRef.current) {
+        window.clearTimeout(activeTimerRef.current);
+      }
+    };
+  }, []);
+
+  const activateItem = (id) => {
+    setActiveItemId(id);
+
+    if (activeTimerRef.current) {
+      window.clearTimeout(activeTimerRef.current);
+    }
+
+    activeTimerRef.current = window.setTimeout(() => {
+      setActiveItemId(null);
+      activeTimerRef.current = null;
+    }, 1400);
+  };
+
   const openVideo = (item) => {
     setVideoFailed(false);
     setModalItem(item);
@@ -110,7 +200,13 @@ export default function FlowingMenu() {
     <>
       <section className={styles.section}>
         {ITEMS.map((item) => (
-          <MenuItem key={item.id} item={item} onVideoOpen={openVideo} />
+          <MenuItem
+            key={item.id}
+            item={item}
+            isActive={activeItemId === item.id}
+            onActivate={activateItem}
+            onVideoOpen={openVideo}
+          />
         ))}
       </section>
 

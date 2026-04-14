@@ -32,6 +32,10 @@
   background: #ffffff;
 }
 
+.rowActive {
+  background: #ffffff;
+}
+
 .rowStatic {
   position: absolute;
   inset: 0;
@@ -45,6 +49,10 @@
 }
 
 .rowHovered .rowStatic {
+  opacity: 0;
+}
+
+.rowActive .rowStatic {
   opacity: 0;
 }
 
@@ -97,6 +105,10 @@
   opacity: 1;
 }
 
+.rowActive .rowMarquee {
+  opacity: 1;
+}
+
 .marqueeTrack {
   display: flex;
   align-items: center;
@@ -107,6 +119,10 @@
 }
 
 .rowHovered .marqueeTrack {
+  animation-play-state: running;
+}
+
+.rowActive .marqueeTrack {
   animation-play-state: running;
 }
 
@@ -305,13 +321,25 @@
     padding: 0 20px;
   }
 
-  .rowMarquee,
-  .rowHovered .rowMarquee {
-    display: none;
+  .rowMarquee {
+    display: flex;
   }
 
+  .rowHovered .rowMarquee,
   .rowHovered .rowStatic {
     opacity: 1;
+  }
+
+  .rowActive {
+    background: #ffffff;
+  }
+
+  .rowActive .rowMarquee {
+    opacity: 1;
+  }
+
+  .rowActive .rowStatic {
+    opacity: 0;
   }
 
   .label,
