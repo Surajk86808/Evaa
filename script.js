@@ -98,6 +98,8 @@ renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(devicePixelRatio);
 document.body.appendChild(renderer.domElement);
 
+let isMobile = innerWidth < 768;
+
 const pointer = new THREE.Vector2(10, 10);
 
 window.addEventListener("pointermove", event => {
@@ -190,13 +192,19 @@ const [texDotted, texReal] = await Promise.all([
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.minFilter = THREE.LinearFilter;
   texture.magFilter = THREE.LinearFilter;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
 });
 
 const compositeMaterial = new THREE.ShaderMaterial({
   uniforms: {
     texDotted: { value: texDotted },
     texReal: { value: texReal },
-    texMask: { value: maskRead.texture }
+    texMask: { value: maskRead.texture },
+    uAspectCanvas: { value: innerWidth / innerHeight },
+    uAspectImage: { value: texDotted.image.width / texDotted.image.height },
+    uMobileZoom: { value: isMobile ? 0.52 : 1.0 },
+    uMobileOffsetY: { value: isMobile ? -0.02 : 0.0 }
   },
   vertexShader: `
     varying vec2 vUv;
@@ -210,15 +218,41 @@ const compositeMaterial = new THREE.ShaderMaterial({
     uniform sampler2D texDotted;
     uniform sampler2D texReal;
     uniform sampler2D texMask;
+    uniform float uAspectCanvas;
+    uniform float uAspectImage;
+    uniform float uMobileZoom;
+    uniform float uMobileOffsetY;
     varying vec2 vUv;
 
     void main() {
-      vec4 dotted = texture2D(texDotted, vUv);
-      vec4 real   = texture2D(texReal,   vUv);
+      vec2 uv = vUv;
+      float canvasAspect = uAspectCanvas;
+      float imageAspect = uAspectImage;
+      vec2 scale = vec2(1.0);
+
+      if (canvasAspect > imageAspect) {
+        scale.y = imageAspect / canvasAspect;
+      } else {
+        scale.x = canvasAspect / imageAspect;
+      }
+
+      vec2 coveredUV = (uv - 0.5) / scale + 0.5;
+      vec2 zoomedUV = (coveredUV - 0.5) / uMobileZoom + 0.5;
+      zoomedUV.y += uMobileOffsetY;
+
+      bool outsideImage =
+        zoomedUV.x < 0.0 || zoomedUV.x > 1.0 ||
+        zoomedUV.y < 0.0 || zoomedUV.y > 1.0;
+
+      vec4 dotted = outsideImage
+        ? vec4(0.0, 0.0, 0.0, 1.0)
+        : texture2D(texDotted, zoomedUV);
+      vec4 real = outsideImage
+        ? vec4(0.0, 0.0, 0.0, 1.0)
+        : texture2D(texReal, zoomedUV);
       float mask  = texture2D(texMask,   vUv).r;
 
       float blend = smoothstep(0.15, 0.65, mask);
-
       vec3 col = mix(dotted.rgb, real.rgb, blend);
       gl_FragColor = vec4(col, 1.0);
     }
@@ -233,13 +267,43 @@ fitPlaneToViewport(compositePlane, texDotted);
 scene.add(compositePlane);
 
 window.addEventListener("resize", () => {
+  isMobile = innerWidth < 768;
   renderer.setSize(innerWidth, innerHeight);
   gu.aspect.value = innerWidth / innerHeight;
 
   maskRead.setSize(innerWidth, innerHeight);
   maskWrite.setSize(innerWidth, innerHeight);
 
+  compositeMaterial.uniforms.uAspectCanvas.value = innerWidth / innerHeight;
+  compositeMaterial.uniforms.uAspectImage.value = texDotted.image.width / texDotted.image.height;
+  compositeMaterial.uniforms.uMobileZoom.value = isMobile ? 0.52 : 1.0;
+  compositeMaterial.uniforms.uMobileOffsetY.value = isMobile ? -0.02 : 0.0;
+
   fitPlaneToViewport(compositePlane, texDotted);
+});
+
+window.addEventListener("keydown", event => {
+  const u = compositeMaterial.uniforms;
+
+  if (event.key === "[") {
+    u.uMobileZoom.value -= 0.02;
+    console.log("zoom:", u.uMobileZoom.value);
+  }
+
+  if (event.key === "]") {
+    u.uMobileZoom.value += 0.02;
+    console.log("zoom:", u.uMobileZoom.value);
+  }
+
+  if (event.key === "ArrowUp") {
+    u.uMobileOffsetY.value += 0.01;
+    console.log("offsetY:", u.uMobileOffsetY.value);
+  }
+
+  if (event.key === "ArrowDown") {
+    u.uMobileOffsetY.value -= 0.01;
+    console.log("offsetY:", u.uMobileOffsetY.value);
+  }
 });
 
 const clock = new THREE.Clock();

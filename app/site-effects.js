@@ -573,41 +573,44 @@ function initParticleCanvas(particleCanvas, particleSection, cleanups) {
 
 function initStats(statsSection, statNumbers, cleanups) {
   if (!statsSection || !statNumbers.length) return;
-
   const animateCount = (element) => {
-    const target = Number(element.dataset.count || 0);
+    const target = parseInt(element.dataset.count || "0", 10);
     const suffix = element.dataset.suffix || "";
-    const duration = target <= 20 ? 1800 : 2200;
-    const startTime = performance.now();
-
-    element.textContent = `0${suffix}`;
-
-    const step = (now) => {
-      const progress = Math.min((now - startTime) / duration, 1);
-      const nextValue = Math.min(target, Math.floor(progress * (target + 1)));
-      element.textContent = `${nextValue}${suffix}`;
-      if (progress < 1) window.requestAnimationFrame(step);
-    };
-
-    window.requestAnimationFrame(step);
+    let current = 0;
+    const step = target / 60;
+    const timer = window.setInterval(() => {
+      current += step;
+      if (current >= target) {
+        current = target;
+        window.clearInterval(timer);
+      }
+      element.textContent = `${Math.floor(current)}${suffix}`;
+    }, 33);
+    cleanups.push(() => window.clearInterval(timer));
   };
 
-  const statsObserver = new IntersectionObserver(([entry]) => {
-    if (!entry.isIntersecting) return;
-    statNumbers.forEach((element) => {
-      if (!element.dataset.animated) {
-        element.dataset.animated = "true";
-        animateCount(element);
-      }
+  const statsObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      statNumbers.forEach((element) => {
+        if (!element.dataset.animated) {
+          element.dataset.animated = "true";
+          animateCount(element);
+        }
+      });
+      statsObserver.disconnect();
     });
-    statsObserver.unobserve(statsSection);
-  }, { threshold: 0.35 });
+  }, {
+    threshold: 0.1,
+    rootMargin: "0px"
+  });
 
   statsObserver.observe(statsSection);
   cleanups.push(() => statsObserver.disconnect());
 }
 
 function initHeroCanvas(cleanups) {
+  const heroSection = document.getElementById("hero");
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x000000);
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -615,9 +618,11 @@ function initHeroCanvas(cleanups) {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.domElement.className = "hero-canvas";
-  document.body.appendChild(renderer.domElement);
+  heroSection?.appendChild(renderer.domElement);
 
   const pointer = new THREE.Vector2(10, 10);
+  let isMobile = window.innerWidth < 768;
+  let isPortraitMobile = window.innerWidth < window.innerHeight;
   const updatePointer = (event) => {
     pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
     pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -625,6 +630,7 @@ function initHeroCanvas(cleanups) {
   const clearPointer = () => pointer.set(10, 10);
   window.addEventListener("pointermove", updatePointer);
   renderer.domElement.addEventListener("pointerleave", clearPointer);
+  renderer.domElement.style.touchAction = "none";
 
   const makeMaskTarget = () =>
     new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, { depthBuffer: false, stencilBuffer: false });
@@ -641,6 +647,11 @@ function initHeroCanvas(cleanups) {
     fadeSpeed: { value: 0.42 }
   };
 
+  if (isMobile) {
+    maskUniforms.brushRadius.value = 0.5;
+    maskUniforms.fadeSpeed.value = 0.22;
+  }
+
   const maskMaterial = new THREE.ShaderMaterial({
     uniforms: maskUniforms,
     vertexShader: "varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }",
@@ -650,49 +661,157 @@ function initHeroCanvas(cleanups) {
   maskScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), maskMaterial));
 
   const textureLoader = new THREE.TextureLoader();
-  const fitPlaneToViewport = (mesh, texture) => {
-    const imgAspect = texture.image.width / texture.image.height;
+  const fitCover = (mesh, texture) => {
+    const imgW = texture.image.width;
+    const imgH = texture.image.height;
+    const imgAspect = imgW / imgH;
     const viewAspect = window.innerWidth / window.innerHeight;
-    if (viewAspect > imgAspect) mesh.scale.set(1, imgAspect / viewAspect, 1);
-    else mesh.scale.set(viewAspect / imgAspect, 1, 1);
+    const scale = Math.max(viewAspect / imgAspect, imgAspect / viewAspect);
+    void scale;
+
+    if (viewAspect > imgAspect) {
+      mesh.scale.set(1, imgAspect / viewAspect, 1);
+    } else {
+      mesh.scale.set(viewAspect / imgAspect, 1, 1);
+    }
   };
 
   let frame = 0;
   let disposed = false;
-  Promise.all([textureLoader.loadAsync("/photos/dotted.png"), textureLoader.loadAsync("/photos/real.png")]).then(([texDotted, texReal]) => {
+  let demoInterval = 0;
+  const onTouchMove = (event) => {
+    event.preventDefault();
+    const touch = event.touches[0];
+    if (!touch) return;
+    pointer.x = (touch.clientX / window.innerWidth) * 2 - 1;
+    pointer.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+    maskUniforms.pointer.value.x = pointer.x;
+    maskUniforms.pointer.value.y = pointer.y;
+  };
+  const onTouchStart = (event) => {
+    const touch = event.touches[0];
+    if (!touch) return;
+    pointer.x = (touch.clientX / window.innerWidth) * 2 - 1;
+    pointer.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+    maskUniforms.pointer.value.x = pointer.x;
+    maskUniforms.pointer.value.y = pointer.y;
+  };
+  const onTouchEnd = () => {};
+  renderer.domElement.addEventListener("touchmove", onTouchMove, { passive: false });
+  renderer.domElement.addEventListener("touchstart", onTouchStart, { passive: true });
+  renderer.domElement.addEventListener("touchend", onTouchEnd, { passive: true });
+
+  const getHeroSources = (portrait) => ({
+    dottedSrc: portrait ? "/photos/dotted-mobile.png" : "/photos/dotted.png",
+    realSrc: portrait ? "/photos/real-mobile.png" : "/photos/real.png",
+    imageAspect: portrait ? 9 / 16 : 16 / 9
+  });
+
+  Promise.all([
+    textureLoader.loadAsync(getHeroSources(isPortraitMobile).dottedSrc),
+    textureLoader.loadAsync(getHeroSources(isPortraitMobile).realSrc)
+  ]).then(async ([texDotted, texReal]) => {
     if (disposed) return;
-    [texDotted, texReal].forEach((texture) => {
+    const prepareTexture = (texture) => {
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.minFilter = THREE.LinearFilter;
       texture.magFilter = THREE.LinearFilter;
-    });
+      texture.wrapS = THREE.ClampToEdgeWrapping;
+      texture.wrapT = THREE.ClampToEdgeWrapping;
+    };
+    [texDotted, texReal].forEach(prepareTexture);
+    let activeDottedTexture = texDotted;
+    let activeRealTexture = texReal;
+    let activeTextureMode = isPortraitMobile ? "portrait" : "landscape";
 
     const material = new THREE.ShaderMaterial({
       uniforms: {
-        texDotted: { value: texDotted },
-        texReal: { value: texReal },
+        texDotted: { value: activeDottedTexture },
+        texReal: { value: activeRealTexture },
         texMask: { value: maskRead.texture },
+        uAspectCanvas: { value: window.innerWidth / window.innerHeight },
+        uAspectImage: { value: getHeroSources(isPortraitMobile).imageAspect },
+        uMobileZoom: { value: 1.0 },
+        uMobileOffsetY: { value: 0.0 },
         dottedOffset: { value: new THREE.Vector2(0, 0) },
-        realOffset: { value: new THREE.Vector2(0, 0.03) },
+        realOffset: { value: new THREE.Vector2(0, isPortraitMobile ? 0 : 0.03) },
         dottedScale: { value: 1 },
         realScale: { value: 1 }
       },
       vertexShader: "varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }",
       fragmentShader:
-        "uniform sampler2D texDotted; uniform sampler2D texReal; uniform sampler2D texMask; uniform vec2 dottedOffset; uniform vec2 realOffset; uniform float dottedScale; uniform float realScale; varying vec2 vUv; void main(){ vec2 dUv=(vUv-0.5)/dottedScale+0.5+dottedOffset; vec2 rUv=(vUv-0.5)/realScale+0.5+realOffset; vec4 dotted=texture2D(texDotted,dUv); vec4 real=texture2D(texReal,rUv); float mask=texture2D(texMask,vUv).r; float blend=smoothstep(0.15,0.65,mask); gl_FragColor=vec4(mix(dotted.rgb,real.rgb,blend),1.0); }"
+        "uniform sampler2D texDotted; uniform sampler2D texReal; uniform sampler2D texMask; uniform vec2 dottedOffset; uniform vec2 realOffset; uniform float dottedScale; uniform float realScale; uniform float uAspectCanvas; uniform float uAspectImage; uniform float uMobileZoom; uniform float uMobileOffsetY; varying vec2 vUv; void main(){ vec2 uv=vUv; float canvasAspect=uAspectCanvas; float imageAspect=uAspectImage; vec2 scale=vec2(1.0); if(canvasAspect>imageAspect){ scale.y=imageAspect/canvasAspect; } else { scale.x=canvasAspect/imageAspect; } vec2 coveredUV=(uv-0.5)/scale+0.5; coveredUV=clamp(coveredUV,0.0,1.0); vec2 zoomedUV=(coveredUV-0.5)/uMobileZoom+0.5; zoomedUV.y+=uMobileOffsetY; bool outsideImage=zoomedUV.x<0.0||zoomedUV.x>1.0||zoomedUV.y<0.0||zoomedUV.y>1.0; vec2 dUv=(zoomedUV-0.5)/dottedScale+0.5+dottedOffset; vec2 rUv=(zoomedUV-0.5)/realScale+0.5+realOffset; bool outsideDotted=outsideImage||dUv.x<0.0||dUv.x>1.0||dUv.y<0.0||dUv.y>1.0; bool outsideReal=outsideImage||rUv.x<0.0||rUv.x>1.0||rUv.y<0.0||rUv.y>1.0; vec4 dotted=outsideDotted?vec4(0.0,0.0,0.0,1.0):texture2D(texDotted,dUv); vec4 real=outsideReal?vec4(0.0,0.0,0.0,1.0):texture2D(texReal,rUv); float mask=texture2D(texMask,vUv).r; float blend=smoothstep(0.15,0.65,mask); gl_FragColor=vec4(mix(dotted.rgb,real.rgb,blend),1.0); }"
     });
 
     const plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
-    fitPlaneToViewport(plane, texDotted);
+    fitCover(plane, activeDottedTexture);
     scene.add(plane);
     const clock = new THREE.Clock();
 
-    const handleResize = () => {
+    const updateHeroTextureMode = async (portrait) => {
+      const nextMode = portrait ? "portrait" : "landscape";
+      const nextSources = getHeroSources(portrait);
+      material.uniforms.uAspectImage.value = nextSources.imageAspect;
+      material.uniforms.uMobileZoom.value = 1.0;
+      material.uniforms.uMobileOffsetY.value = 0.0;
+      material.uniforms.realOffset.value.set(0, portrait ? 0 : 0.03);
+      material.uniforms.realScale.value = 1;
+
+      if (nextMode === activeTextureMode) {
+        fitCover(plane, activeDottedTexture);
+        return;
+      }
+
+      const [nextDottedTexture, nextRealTexture] = await Promise.all([
+        textureLoader.loadAsync(nextSources.dottedSrc),
+        textureLoader.loadAsync(nextSources.realSrc)
+      ]);
+
+      if (disposed) {
+        nextDottedTexture.dispose();
+        nextRealTexture.dispose();
+        return;
+      }
+
+      [nextDottedTexture, nextRealTexture].forEach(prepareTexture);
+      activeDottedTexture.dispose();
+      activeRealTexture.dispose();
+      activeDottedTexture = nextDottedTexture;
+      activeRealTexture = nextRealTexture;
+      activeTextureMode = nextMode;
+      material.uniforms.texDotted.value = activeDottedTexture;
+      material.uniforms.texReal.value = activeRealTexture;
+      fitCover(plane, activeDottedTexture);
+    };
+
+    if (isMobile) {
+      await new Promise((resolve) => window.setTimeout(resolve, 1200));
+      if (!disposed) {
+        let t = 0;
+        demoInterval = window.setInterval(() => {
+          t += 0.06;
+          maskUniforms.pointer.value.x = Math.sin(t) * 0.5;
+          maskUniforms.pointer.value.y = Math.cos(t * 0.7) * 0.3;
+          if (t > Math.PI * 2.5) {
+            window.clearInterval(demoInterval);
+            demoInterval = 0;
+            maskUniforms.pointer.value.set(10, 10);
+          }
+        }, 40);
+      }
+    }
+
+    const handleResize = async () => {
+      isMobile = window.innerWidth < 768;
+      isPortraitMobile = window.innerWidth < window.innerHeight;
       renderer.setSize(window.innerWidth, window.innerHeight);
       maskRead.setSize(window.innerWidth, window.innerHeight);
       maskWrite.setSize(window.innerWidth, window.innerHeight);
       maskUniforms.aspect.value = window.innerWidth / window.innerHeight;
-      fitPlaneToViewport(plane, texDotted);
+      maskUniforms.brushRadius.value = isMobile ? 0.5 : 0.42;
+      maskUniforms.fadeSpeed.value = isMobile ? 0.22 : 0.42;
+      material.uniforms.uAspectCanvas.value = window.innerWidth / window.innerHeight;
+      await updateHeroTextureMode(isPortraitMobile);
     };
 
     window.addEventListener("resize", handleResize);
@@ -707,6 +826,10 @@ function initHeroCanvas(cleanups) {
       if (event.key === "ArrowRight") uniforms.realOffset.value.x += 0.01;
       if (event.key === "+" || event.key === "=") uniforms.realScale.value += 0.05;
       if (event.key === "-") uniforms.realScale.value -= 0.05;
+      if (event.key === "z") uniforms.uMobileZoom.value += 0.1;
+      if (event.key === "x") uniforms.uMobileZoom.value -= 0.1;
+      if (event.key === "u") uniforms.uMobileOffsetY.value += 0.01;
+      if (event.key === "d") uniforms.uMobileOffsetY.value -= 0.01;
 
       if (
         event.key === "ArrowUp" ||
@@ -715,7 +838,11 @@ function initHeroCanvas(cleanups) {
         event.key === "ArrowRight" ||
         event.key === "+" ||
         event.key === "=" ||
-        event.key === "-"
+        event.key === "-" ||
+        event.key === "z" ||
+        event.key === "x" ||
+        event.key === "u" ||
+        event.key === "d"
       ) {
         console.log(
           "offset:",
@@ -724,7 +851,11 @@ function initHeroCanvas(cleanups) {
             y: Number(uniforms.realOffset.value.y.toFixed(2))
           },
           "scale:",
-          Number(uniforms.realScale.value.toFixed(2))
+          Number(uniforms.realScale.value.toFixed(2)),
+          "zoom:",
+          Number(uniforms.uMobileZoom.value.toFixed(2)),
+          "offsetY:",
+          Number(uniforms.uMobileOffsetY.value.toFixed(2))
         );
       }
     };
@@ -749,10 +880,11 @@ function initHeroCanvas(cleanups) {
 
     renderLoop();
     cleanups.push(() => {
-      texDotted.dispose();
-      texReal.dispose();
+      activeDottedTexture.dispose();
+      activeRealTexture.dispose();
       material.dispose();
       plane.geometry.dispose();
+      if (demoInterval) window.clearInterval(demoInterval);
     });
   });
 
@@ -761,6 +893,10 @@ function initHeroCanvas(cleanups) {
     window.cancelAnimationFrame(frame);
     window.removeEventListener("pointermove", updatePointer);
     renderer.domElement.removeEventListener("pointerleave", clearPointer);
+    renderer.domElement.removeEventListener("touchmove", onTouchMove);
+    renderer.domElement.removeEventListener("touchstart", onTouchStart);
+    renderer.domElement.removeEventListener("touchend", onTouchEnd);
+    if (demoInterval) window.clearInterval(demoInterval);
     maskRead.dispose();
     maskWrite.dispose();
     maskMaterial.dispose();

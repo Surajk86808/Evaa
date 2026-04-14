@@ -34,8 +34,8 @@ input {
   font: inherit;
 }
 
-body > canvas {
-  position: fixed;
+.hero-canvas {
+  position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
@@ -1022,6 +1022,26 @@ body > canvas {
 }
 
 @media (max-width: 768px) {
+  .hero__headline,
+  .hero__subline,
+  .hero__content,
+  .hero__content--desktop,
+  .hero__background-text,
+  .hero__meta,
+  .hero__scroll,
+  .scroll-indicator,
+  [class*="heroHeadline"],
+  [class*="heroSubline"],
+  [class*="heroText"],
+  [class*="headline"],
+  [class*="subline"],
+  [class*="scroll"],
+  [class*="Scroll"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+
   .navbar {
     height: 68px;
     padding: 0 18px;
@@ -1044,6 +1064,31 @@ body > canvas {
   .building,
   .research {
     padding: 88px 16px;
+  }
+
+  .stats-strip {
+    min-height: auto;
+    padding: 32px 20px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px 0;
+  }
+
+  .stats-strip__item {
+    min-height: auto;
+    padding: 0 12px;
+  }
+
+  .stats-strip__item + .stats-strip__item {
+    border-left: 0;
+  }
+
+  .stats-strip__item:nth-child(2n) {
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .stats-strip__item:nth-child(n + 3) {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 32px;
   }
 
   .section-head {
@@ -1123,15 +1168,6 @@ body > canvas {
   .avatar-grid {
     grid-template-columns: 1fr;
     gap: 14px;
-  }
-
-  .stats-strip {
-    grid-template-columns: 1fr;
-  }
-
-  .stats-strip__item + .stats-strip__item {
-    border-left: 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .chatbot-trigger {

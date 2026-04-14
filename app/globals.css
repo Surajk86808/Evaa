@@ -1,7 +1,7 @@
 @import "../style.css";
 
-body > canvas.hero-canvas {
-  position: fixed;
+.hero-canvas {
+  position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
@@ -687,9 +687,19 @@ body > canvas.hero-canvas {
 @media (max-width: 768px) {
   #hero {
     min-height: 100svh;
+    width: 100vw !important;
+    height: 100svh !important;
     padding: 104px 20px 120px;
     display: flex;
     align-items: flex-end;
+    overflow: hidden !important;
+    position: relative !important;
+  }
+
+  #hero canvas {
+    width: 100% !important;
+    height: 100% !important;
+    touch-action: none !important;
   }
 
   #hero .hero__content--desktop {
@@ -701,6 +711,14 @@ body > canvas.hero-canvas {
     display: block;
     transform: none;
     z-index: 14;
+    padding: 96px 24px 64px;
+    margin: auto -20px -120px;
+    background: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.82) 0%,
+      rgba(0, 0, 0, 0.48) 58%,
+      transparent 100%
+    );
   }
 
   #hero .hero__headline,
@@ -725,27 +743,14 @@ body > canvas.hero-canvas {
     color: rgba(255, 255, 255, 0.58);
   }
 
-  #hero .hero__meta--left {
-    display: block;
-    position: absolute;
-    left: 20px;
-    top: 84px;
-    bottom: auto;
-    max-width: 220px;
-    font-size: 10px;
-    letter-spacing: 0.24em;
-  }
-
-  #hero .hero__meta--right {
-    top: 84px;
-    right: 20px;
-    bottom: auto;
-    font-size: 10px;
-    letter-spacing: 0.2em;
-  }
-
-  #hero .type-block,
-  #hero .vertical-meta {
+  #type-left,
+  #type-right,
+  .vertical-meta,
+  .meta-left,
+  .meta-right,
+  #hero .hero__meta--left,
+  #hero .hero__meta--right,
+  #hero .type-block {
     display: none;
   }
 
@@ -772,6 +777,13 @@ body > canvas.hero-canvas {
 
   #hero .hero__scroll-line {
     height: 34px;
+  }
+
+  #chat-trigger {
+    bottom: 20px !important;
+    right: 16px !important;
+    width: 56px !important;
+    height: 56px !important;
   }
 }
 
