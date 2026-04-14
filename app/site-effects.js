@@ -628,7 +628,10 @@ function initHeroCanvas(cleanups) {
     pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
     pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
   };
-  const clearPointer = () => pointer.set(10, 10);
+  const clearPointer = () => {
+    pointer.set(10, 10);
+    maskUniforms.pointer.value.set(10, 10);
+  };
   window.addEventListener("pointermove", updatePointer);
   renderer.domElement.addEventListener("pointerleave", clearPointer);
   renderer.domElement.style.touchAction = "none";
@@ -696,10 +699,19 @@ function initHeroCanvas(cleanups) {
     maskUniforms.pointer.value.x = pointer.x;
     maskUniforms.pointer.value.y = pointer.y;
   };
-  const onTouchEnd = () => {};
+  const onTouchEnd = () => {
+    clearPointer();
+  };
+  const handleMobileScroll = () => {
+    if (window.innerWidth < 768) {
+      clearPointer();
+    }
+  };
   renderer.domElement.addEventListener("touchmove", onTouchMove, { passive: true });
   renderer.domElement.addEventListener("touchstart", onTouchStart, { passive: true });
   renderer.domElement.addEventListener("touchend", onTouchEnd, { passive: true });
+  renderer.domElement.addEventListener("touchcancel", onTouchEnd, { passive: true });
+  window.addEventListener("scroll", handleMobileScroll, { passive: true });
 
   const getHeroSources = (portrait) => ({
     dottedSrc: portrait ? "/photos/dotted-mobile.png" : "/photos/dotted.png",
@@ -875,10 +887,12 @@ function initHeroCanvas(cleanups) {
     disposed = true;
     window.cancelAnimationFrame(frame);
     window.removeEventListener("pointermove", updatePointer);
+    window.removeEventListener("scroll", handleMobileScroll);
     renderer.domElement.removeEventListener("pointerleave", clearPointer);
     renderer.domElement.removeEventListener("touchmove", onTouchMove);
     renderer.domElement.removeEventListener("touchstart", onTouchStart);
     renderer.domElement.removeEventListener("touchend", onTouchEnd);
+    renderer.domElement.removeEventListener("touchcancel", onTouchEnd);
     if (demoInterval) window.clearInterval(demoInterval);
     maskRead.dispose();
     maskWrite.dispose();

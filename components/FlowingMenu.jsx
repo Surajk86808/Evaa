@@ -70,18 +70,15 @@ function MenuItem({ item, isActive, onActivate, onVideoOpen }) {
   };
 
   const handleTouchEnd = () => {
-    const shouldOpen = touchState.current.active && !touchState.current.moved;
     touchState.current.active = false;
 
     if (window.innerWidth < 769) {
-      if (shouldOpen && isActive) {
-        onVideoOpen(item);
-        return;
-      }
-
       onActivate(item.id);
       return;
     }
+
+    const shouldOpen = !touchState.current.moved;
+    touchState.current.moved = false;
 
     if (shouldOpen) {
       onVideoOpen(item);
@@ -90,12 +87,12 @@ function MenuItem({ item, isActive, onActivate, onVideoOpen }) {
 
   const handleClick = () => {
     if (window.innerWidth < 769) {
-      if (isActive) {
-        onVideoOpen(item);
+      if (touchState.current.moved) {
+        touchState.current.moved = false;
         return;
       }
 
-      onActivate(item.id);
+      onVideoOpen(item);
       return;
     }
 
