@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import FlowingMenu from "../components/FlowingMenu";
+import VideoReel from "../components/VideoReel";
 import { initSite } from "./site-effects";
 
 const AVATAR_ITEMS = [
@@ -100,7 +100,7 @@ export default function HomePage() {
           </a>
         </section>
 
-        <FlowingMenu />
+        <VideoReel />
 
         <section className="stats-strip" data-stats>
           <div className="stats-strip__item">

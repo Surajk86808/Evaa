@@ -371,8 +371,10 @@ function initTypingOverlay(cleanups) {
 
     leftEl.textContent = "";
     rightEl.textContent = "";
-    leftEl.style.opacity = "1";
-    rightEl.style.opacity = "1";
+    if (window.innerWidth > 768) {
+      leftEl.style.opacity = "1";
+      rightEl.style.opacity = "1";
+    }
 
     const leftTyper = new TypeWriter(leftEl, leftLines, {
       speed: 55,
@@ -411,11 +413,11 @@ function initTypingOverlay(cleanups) {
       .forEach((element) => element.classList.remove("visible"));
     if (leftEl) {
       leftEl.textContent = "";
-      leftEl.style.opacity = "";
+      leftEl.style.opacity = "0";
     }
     if (rightEl) {
       rightEl.textContent = "";
-      rightEl.style.opacity = "";
+      rightEl.style.opacity = "0";
     }
   });
 }
@@ -678,6 +680,8 @@ function initHeroCanvas(cleanups) {
     } else {
       mesh.scale.set(viewAspect / imgAspect, 1, 1);
     }
+
+    mesh.position.set(0, 0, 0);
   };
 
   let frame = 0;
@@ -713,10 +717,12 @@ function initHeroCanvas(cleanups) {
   renderer.domElement.addEventListener("touchcancel", onTouchEnd, { passive: true });
   window.addEventListener("scroll", handleMobileScroll, { passive: true });
 
+  const HERO_DESKTOP_IMAGE_ASPECT = 2752 / 1536;
+  const HERO_PORTRAIT_IMAGE_ASPECT = 1536 / 2752;
   const getHeroSources = (portrait) => ({
     dottedSrc: portrait ? "/photos/dotted-mobile.png" : "/photos/dotted.png",
     realSrc: portrait ? "/photos/real-mobile.png" : "/photos/real.png",
-    imageAspect: portrait ? 9 / 16 : 16 / 9
+    imageAspect: portrait ? HERO_PORTRAIT_IMAGE_ASPECT : HERO_DESKTOP_IMAGE_ASPECT
   });
 
   Promise.all([
@@ -736,26 +742,29 @@ function initHeroCanvas(cleanups) {
     let activeRealTexture = texReal;
     let activeTextureMode = isPortraitMobile ? "portrait" : "landscape";
 
+    const initialSources = getHeroSources(isPortraitMobile);
+
     const material = new THREE.ShaderMaterial({
       uniforms: {
         texDotted: { value: activeDottedTexture },
         texReal: { value: activeRealTexture },
         texMask: { value: maskRead.texture },
         uAspectCanvas: { value: window.innerWidth / window.innerHeight },
-        uAspectImage: { value: getHeroSources(isPortraitMobile).imageAspect },
-        uMobileZoom: { value: isPortraitMobile ? 1.08 : 1.0 },
-        uMobileOffsetY: { value: isPortraitMobile ? -0.03 : 0.0 },
+        uAspectImage: { value: initialSources.imageAspect },
+        uMobileZoom: { value: 1.0 },
+        uMobileOffsetY: { value: 0.0 },
         dottedOffset: { value: new THREE.Vector2(0, 0) },
-        realOffset: { value: new THREE.Vector2(0, isPortraitMobile ? 0 : 0.03) },
+        realOffset: { value: new THREE.Vector2(0, 0) },
         dottedScale: { value: 1 },
         realScale: { value: 1 }
       },
       vertexShader: "varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }",
       fragmentShader:
-        "uniform sampler2D texDotted; uniform sampler2D texReal; uniform sampler2D texMask; uniform vec2 dottedOffset; uniform vec2 realOffset; uniform float dottedScale; uniform float realScale; uniform float uAspectCanvas; uniform float uAspectImage; uniform float uMobileZoom; uniform float uMobileOffsetY; varying vec2 vUv; void main(){ vec2 uv=vUv; float canvasAspect=uAspectCanvas; float imageAspect=uAspectImage; vec2 scale=vec2(1.0); if(canvasAspect>imageAspect){ scale.y=imageAspect/canvasAspect; } else { scale.x=canvasAspect/imageAspect; } vec2 coveredUV=(uv-0.5)/scale+0.5; coveredUV=clamp(coveredUV,0.0,1.0); vec2 zoomedUV=(coveredUV-0.5)/uMobileZoom+0.5; zoomedUV.y+=uMobileOffsetY; bool outsideImage=zoomedUV.x<0.0||zoomedUV.x>1.0||zoomedUV.y<0.0||zoomedUV.y>1.0; vec2 dUv=(zoomedUV-0.5)/dottedScale+0.5+dottedOffset; vec2 rUv=(zoomedUV-0.5)/realScale+0.5+realOffset; bool outsideDotted=outsideImage||dUv.x<0.0||dUv.x>1.0||dUv.y<0.0||dUv.y>1.0; bool outsideReal=outsideImage||rUv.x<0.0||rUv.x>1.0||rUv.y<0.0||rUv.y>1.0; vec4 dotted=outsideDotted?vec4(0.0,0.0,0.0,1.0):texture2D(texDotted,dUv); vec4 real=outsideReal?vec4(0.0,0.0,0.0,1.0):texture2D(texReal,rUv); float mask=texture2D(texMask,vUv).r; float blend=smoothstep(0.15,0.65,mask); gl_FragColor=vec4(mix(dotted.rgb,real.rgb,blend),1.0); }"
+        "uniform sampler2D texDotted; uniform sampler2D texReal; uniform sampler2D texMask; uniform vec2 dottedOffset; uniform vec2 realOffset; uniform float dottedScale; uniform float realScale; uniform float uAspectCanvas; uniform float uAspectImage; uniform float uMobileZoom; uniform float uMobileOffsetY; varying vec2 vUv; void main(){ vec2 uv=vUv; float canvasAspect=uAspectCanvas; float imageAspect=uAspectImage; vec2 scale=vec2(1.0); if(canvasAspect>imageAspect){ scale.y=imageAspect/canvasAspect; } else { scale.x=canvasAspect/imageAspect; } vec2 coveredUV=(uv-0.5)/scale+0.5; coveredUV=clamp(coveredUV,0.0,1.0); vec2 baseUv=(coveredUV-0.5)/uMobileZoom+0.5; baseUv.y+=uMobileOffsetY; bool outsideImage=baseUv.x<0.0||baseUv.x>1.0||baseUv.y<0.0||baseUv.y>1.0; vec2 dUv=(baseUv-0.5)/dottedScale+0.5+dottedOffset; vec2 rUv=(baseUv-0.5)/realScale+0.5+realOffset; bool outsideDotted=outsideImage||dUv.x<0.0||dUv.x>1.0||dUv.y<0.0||dUv.y>1.0; bool outsideReal=outsideImage||rUv.x<0.0||rUv.x>1.0||rUv.y<0.0||rUv.y>1.0; vec4 dotted=outsideDotted?vec4(0.0,0.0,0.0,1.0):texture2D(texDotted,dUv); vec4 real=outsideReal?vec4(0.0,0.0,0.0,1.0):texture2D(texReal,rUv); float mask=texture2D(texMask,vUv).r; float blend=smoothstep(0.15,0.65,mask); gl_FragColor=vec4(mix(dotted.rgb,real.rgb,blend),1.0); }"
     });
 
     const plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+    plane.position.set(0, 0, 0);
     fitCover(plane, activeDottedTexture);
     scene.add(plane);
     const clock = new THREE.Clock();
@@ -764,9 +773,11 @@ function initHeroCanvas(cleanups) {
       const nextMode = portrait ? "portrait" : "landscape";
       const nextSources = getHeroSources(portrait);
       material.uniforms.uAspectImage.value = nextSources.imageAspect;
-      material.uniforms.uMobileZoom.value = portrait ? 1.08 : 1.0;
-      material.uniforms.uMobileOffsetY.value = portrait ? -0.03 : 0.0;
-      material.uniforms.realOffset.value.set(0, portrait ? 0 : 0.03);
+      material.uniforms.uMobileZoom.value = 1.0;
+      material.uniforms.uMobileOffsetY.value = 0.0;
+      material.uniforms.dottedOffset.value.set(0, 0);
+      material.uniforms.realOffset.value.set(0, 0);
+      material.uniforms.dottedScale.value = 1;
       material.uniforms.realScale.value = 1;
 
       if (nextMode === activeTextureMode) {
@@ -793,6 +804,11 @@ function initHeroCanvas(cleanups) {
       activeTextureMode = nextMode;
       material.uniforms.texDotted.value = activeDottedTexture;
       material.uniforms.texReal.value = activeRealTexture;
+      material.uniforms.dottedOffset.value.set(0, 0);
+      material.uniforms.realOffset.value.set(0, 0);
+      material.uniforms.uMobileOffsetY.value = 0.0;
+      material.uniforms.dottedScale.value = 1;
+      material.uniforms.realScale.value = 1;
       fitCover(plane, activeDottedTexture);
     };
 
@@ -806,6 +822,12 @@ function initHeroCanvas(cleanups) {
       maskUniforms.brushRadius.value = isMobile ? 0.4 : 0.42;
       maskUniforms.fadeSpeed.value = isMobile ? 0.34 : 0.42;
       material.uniforms.uAspectCanvas.value = window.innerWidth / window.innerHeight;
+      material.uniforms.uMobileZoom.value = 1.0;
+      material.uniforms.uMobileOffsetY.value = 0.0;
+      material.uniforms.dottedOffset.value.set(0, 0);
+      material.uniforms.realOffset.value.set(0, 0);
+      material.uniforms.dottedScale.value = 1;
+      material.uniforms.realScale.value = 1;
       await updateHeroTextureMode(isPortraitMobile);
     };
 
@@ -814,17 +836,43 @@ function initHeroCanvas(cleanups) {
 
     const handleShaderDebugKeydown = (event) => {
       const uniforms = material.uniforms;
+      const offsetStep = 0.005;
+      const scaleStep = 0.02;
 
-      if (event.key === "ArrowUp") uniforms.realOffset.value.y += 0.01;
-      if (event.key === "ArrowDown") uniforms.realOffset.value.y -= 0.01;
-      if (event.key === "ArrowLeft") uniforms.realOffset.value.x -= 0.01;
-      if (event.key === "ArrowRight") uniforms.realOffset.value.x += 0.01;
-      if (event.key === "+" || event.key === "=") uniforms.realScale.value += 0.05;
-      if (event.key === "-") uniforms.realScale.value -= 0.05;
+      if (event.key === "ArrowUp") uniforms.realOffset.value.y += offsetStep;
+      if (event.key === "ArrowDown") uniforms.realOffset.value.y -= offsetStep;
+      if (event.key === "ArrowLeft") uniforms.realOffset.value.x -= offsetStep;
+      if (event.key === "ArrowRight") uniforms.realOffset.value.x += offsetStep;
+      if (event.key === "+" || event.key === "=") uniforms.realScale.value += scaleStep;
+      if (event.key === "-") uniforms.realScale.value -= scaleStep;
       if (event.key === "z") uniforms.uMobileZoom.value += 0.1;
       if (event.key === "x") uniforms.uMobileZoom.value -= 0.1;
       if (event.key === "u") uniforms.uMobileOffsetY.value += 0.01;
       if (event.key === "d") uniforms.uMobileOffsetY.value -= 0.01;
+      if (event.key === "r" || event.key === "R") {
+        uniforms.dottedOffset.value.set(0, 0);
+        uniforms.realOffset.value.set(0, 0);
+        uniforms.uMobileOffsetY.value = 0.0;
+        uniforms.dottedScale.value = 1;
+        uniforms.realScale.value = 1;
+      }
+
+      if (event.key === "p" || event.key === "P") {
+        console.log("hero uniforms:", {
+          dottedOffset: {
+            x: Number(uniforms.dottedOffset.value.x.toFixed(3)),
+            y: Number(uniforms.dottedOffset.value.y.toFixed(3))
+          },
+          realOffset: {
+            x: Number(uniforms.realOffset.value.x.toFixed(3)),
+            y: Number(uniforms.realOffset.value.y.toFixed(3))
+          },
+          dottedScale: Number(uniforms.dottedScale.value.toFixed(3)),
+          realScale: Number(uniforms.realScale.value.toFixed(3)),
+          mobileZoom: Number(uniforms.uMobileZoom.value.toFixed(3)),
+          mobileOffsetY: Number(uniforms.uMobileOffsetY.value.toFixed(3))
+        });
+      }
 
       if (
         event.key === "ArrowUp" ||
@@ -837,20 +885,22 @@ function initHeroCanvas(cleanups) {
         event.key === "z" ||
         event.key === "x" ||
         event.key === "u" ||
-        event.key === "d"
+        event.key === "d" ||
+        event.key === "r" ||
+        event.key === "R"
       ) {
         console.log(
           "offset:",
           {
-            x: Number(uniforms.realOffset.value.x.toFixed(2)),
-            y: Number(uniforms.realOffset.value.y.toFixed(2))
+            x: Number(uniforms.realOffset.value.x.toFixed(3)),
+            y: Number(uniforms.realOffset.value.y.toFixed(3))
           },
           "scale:",
-          Number(uniforms.realScale.value.toFixed(2)),
+          Number(uniforms.realScale.value.toFixed(3)),
           "zoom:",
-          Number(uniforms.uMobileZoom.value.toFixed(2)),
+          Number(uniforms.uMobileZoom.value.toFixed(3)),
           "offsetY:",
-          Number(uniforms.uMobileOffsetY.value.toFixed(2))
+          Number(uniforms.uMobileOffsetY.value.toFixed(3))
         );
       }
     };
