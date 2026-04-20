@@ -138,7 +138,7 @@ export default function VideoReel() {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <button className={`${styles.navButton} ${styles.prevButton}`} onClick={() => scroll("left")} aria-label="Previous cards">
+        <button suppressHydrationWarning={true} className={`${styles.navButton} ${styles.prevButton}`} onClick={() => scroll("left")} aria-label="Previous cards">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6"></polyline>
           </svg>
@@ -158,7 +158,7 @@ export default function VideoReel() {
           </div>
         </div>
 
-        <button className={`${styles.navButton} ${styles.nextButton}`} onClick={() => scroll("right")} aria-label="Next cards">
+        <button suppressHydrationWarning={true} className={`${styles.navButton} ${styles.nextButton}`} onClick={() => scroll("right")} aria-label="Next cards">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="9 18 15 12 9 6"></polyline>
           </svg>

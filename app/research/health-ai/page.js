@@ -3,6 +3,8 @@ export const metadata = {
   description: "Can an AI agent change how someone manages their health?"
 };
 
+import "../research.css";
+
 export default function HealthAiResearchPage() {
   return (
     <>
@@ -53,56 +55,6 @@ export default function HealthAiResearchPage() {
           </div>
         </section>
       </main>
-
-      <style jsx>{`
-        a {
-          text-decoration: none;
-        }
-
-        .cta-link {
-          transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-        }
-
-        .cta-link:hover {
-          background: rgba(255, 255, 255, 0.06);
-          border-color: rgba(255, 255, 255, 0.34);
-          color: rgba(255, 255, 255, 0.96);
-        }
-
-        @media (max-width: 768px) {
-          .research-nav {
-            height: 72px;
-            padding: 0 24px;
-          }
-
-          .research-hero {
-            padding: 72px 24px 60px;
-            min-height: auto;
-          }
-
-          .research-hero-inner {
-            grid-template-columns: 1fr;
-            gap: 24px;
-          }
-
-          .research-heading {
-            font-size: clamp(32px, 8vw, 48px);
-          }
-
-          .research-pdf {
-            padding: 0 24px 80px;
-          }
-
-          .research-iframe-shell {
-            height: 60vh;
-          }
-
-          .research-cta-row {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-        }
-      `}</style>
     </>
   );
 }
