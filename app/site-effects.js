@@ -618,7 +618,9 @@ function initHeroCanvas(cleanups) {
   scene.background = new THREE.Color(0x000000);
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  const heroW = heroSection?.offsetWidth || window.innerWidth;
+  const heroH = heroSection?.offsetHeight || window.innerHeight;
+  renderer.setSize(heroW, heroH);
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.domElement.className = "hero-canvas";
   renderer.domElement.style.position = "absolute";
@@ -645,7 +647,7 @@ function initHeroCanvas(cleanups) {
   renderer.domElement.style.touchAction = "none";
 
   const makeMaskTarget = () =>
-    new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, { depthBuffer: false, stencilBuffer: false });
+    new THREE.WebGLRenderTarget(heroSection?.offsetWidth || window.innerWidth, heroSection?.offsetHeight || window.innerHeight, { depthBuffer: false, stencilBuffer: false });
   let maskRead = makeMaskTarget();
   let maskWrite = makeMaskTarget();
   const maskScene = new THREE.Scene();
