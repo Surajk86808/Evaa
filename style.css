@@ -20,6 +20,20 @@ body {
   overflow-x: hidden;
 }
 
+main,
+section,
+canvas,
+video {
+  margin: 0;
+  padding: 0;
+}
+
+canvas,
+video {
+  display: block;
+  background: #000000;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -189,6 +203,7 @@ input {
   min-height: 100vh;
   z-index: 1;
   overflow: hidden;
+  background: #000000;
 }
 
 .hero::before {
@@ -199,7 +214,7 @@ input {
     180deg,
     rgba(0, 0, 0, 0.06) 0%,
     rgba(0, 0, 0, 0.1) 45%,
-    rgba(0, 0, 0, 0.48) 100%
+    rgba(0, 0, 0, 0.18) 100%
   );
   z-index: 3;
   pointer-events: none;
@@ -422,7 +437,7 @@ input {
 
 .stats-strip {
   z-index: 5;
-  background: #0d0d0d;
+  background: #000000;
   min-height: 200px;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -734,7 +749,7 @@ input {
 .research {
   z-index: 5;
   padding: 120px 48px;
-  background: #0a0a0a;
+  background: #000000;
 }
 
 .section-head {
@@ -779,7 +794,6 @@ input {
 .footer {
   z-index: 5;
   background: #000000;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding: 48px;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;

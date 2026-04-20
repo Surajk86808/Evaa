@@ -621,6 +621,12 @@ function initHeroCanvas(cleanups) {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.domElement.className = "hero-canvas";
+  renderer.domElement.style.position = "absolute";
+  renderer.domElement.style.top = "0";
+  renderer.domElement.style.left = "0";
+  renderer.domElement.style.width = "100%";
+  renderer.domElement.style.height = "100%";
+  renderer.domElement.style.display = "block";
   heroSection?.appendChild(renderer.domElement);
 
   const pointer = new THREE.Vector2(10, 10);
@@ -815,7 +821,10 @@ function initHeroCanvas(cleanups) {
     const handleResize = async () => {
       isMobile = window.innerWidth < 768;
       isPortraitMobile = window.innerWidth < window.innerHeight;
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      const w = heroSection.offsetWidth;
+      const h = heroSection.offsetHeight;
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       maskRead.setSize(window.innerWidth, window.innerHeight);
       maskWrite.setSize(window.innerWidth, window.innerHeight);
       maskUniforms.aspect.value = window.innerWidth / window.innerHeight;
