@@ -652,6 +652,12 @@ function initHeroCanvas(cleanups) {
   const pointer = new THREE.Vector2(10, 10);
   let isMobile = window.innerWidth < 768;
   let isPortraitMobile = window.innerWidth < window.innerHeight;
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchGesture = null;
+  const applyHeroTouchAction = () => {
+    renderer.domElement.style.touchAction = isMobile ? "pan-y" : "none";
+  };
   const updatePointer = (event) => {
     pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
     pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -662,7 +668,7 @@ function initHeroCanvas(cleanups) {
   };
   window.addEventListener("pointermove", updatePointer);
   renderer.domElement.addEventListener("pointerleave", clearPointer);
-  renderer.domElement.style.touchAction = "none";
+  applyHeroTouchAction();
 
   const makeMaskTarget = () =>
     new THREE.WebGLRenderTarget(heroSection?.offsetWidth || window.innerWidth, heroSection?.offsetHeight || window.innerHeight, { depthBuffer: false, stencilBuffer: false });
@@ -702,23 +708,43 @@ function initHeroCanvas(cleanups) {
   let frame = 0;
   let disposed = false;
   let demoInterval = 0;
-  const onTouchMove = (event) => {
-    const touch = event.touches[0];
-    if (!touch) return;
+  const setPointerFromTouch = (touch) => {
     pointer.x = (touch.clientX / window.innerWidth) * 2 - 1;
     pointer.y = -(touch.clientY / window.innerHeight) * 2 + 1;
     maskUniforms.pointer.value.x = pointer.x;
     maskUniforms.pointer.value.y = pointer.y;
+  };
+  const onTouchMove = (event) => {
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    if (touchGesture === null) {
+      const dx = touch.clientX - touchStartX;
+      const dy = touch.clientY - touchStartY;
+
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) {
+        return;
+      }
+
+      touchGesture = Math.abs(dx) > Math.abs(dy) ? "horizontal" : "vertical";
+    }
+
+    if (touchGesture !== "horizontal") {
+      clearPointer();
+      return;
+    }
+
+    setPointerFromTouch(touch);
   };
   const onTouchStart = (event) => {
     const touch = event.touches[0];
     if (!touch) return;
-    pointer.x = (touch.clientX / window.innerWidth) * 2 - 1;
-    pointer.y = -(touch.clientY / window.innerHeight) * 2 + 1;
-    maskUniforms.pointer.value.x = pointer.x;
-    maskUniforms.pointer.value.y = pointer.y;
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    touchGesture = null;
   };
   const onTouchEnd = () => {
+    touchGesture = null;
     clearPointer();
   };
   const handleMobileScroll = () => {
@@ -847,6 +873,7 @@ function initHeroCanvas(cleanups) {
     const handleResize = async () => {
       isMobile = window.innerWidth < 768;
       isPortraitMobile = window.innerWidth < window.innerHeight;
+      applyHeroTouchAction();
       const w = heroSection.offsetWidth;
       const h = heroSection.offsetHeight;
       renderer.setSize(w, h);
