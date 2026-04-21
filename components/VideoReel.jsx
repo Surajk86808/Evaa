@@ -26,20 +26,9 @@ const BASE_ITEMS = [
   }
 ];
 
-function ReelCard({ item, failed, onError, onClick }) {
+function ReelCard({ item, failed, onError }) {
   return (
-    <article 
-      className={styles.card} 
-      onClick={onClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onClick();
-        }
-      }}
-    >
+    <article className={styles.card}>
       {!failed ? (
         <video
           className={styles.video}
@@ -68,7 +57,6 @@ function ReelCard({ item, failed, onError, onClick }) {
 export default function VideoReel() {
   const items = useMemo(() => [...BASE_ITEMS, ...BASE_ITEMS, ...BASE_ITEMS], []);
   const [failedItems, setFailedItems] = useState({});
-  const [selectedItem, setSelectedItem] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
   const scrollRef = useRef(null);
   const accumRef = useRef(0);
@@ -77,7 +65,7 @@ export default function VideoReel() {
     let animationFrameId;
 
     const autoScroll = () => {
-      if (scrollRef.current && !isHovered && !selectedItem) {
+      if (scrollRef.current && !isHovered) {
         accumRef.current += 0.5;
         if (accumRef.current >= 1) {
           const shift = Math.floor(accumRef.current);
@@ -96,7 +84,7 @@ export default function VideoReel() {
 
     animationFrameId = requestAnimationFrame(autoScroll);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [isHovered, selectedItem]);
+  }, [isHovered]);
 
   const scroll = (direction) => {
     if (scrollRef.current) {
@@ -118,17 +106,6 @@ export default function VideoReel() {
       return { ...current, [index]: true };
     });
   };
-
-  useEffect(() => {
-    if (selectedItem) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [selectedItem]);
 
   return (
     <section className={styles.section} aria-label="EVAA video reel">
@@ -152,7 +129,6 @@ export default function VideoReel() {
                 item={item}
                 failed={Boolean(failedItems[index])}
                 onError={() => markFailed(index)}
-                onClick={() => setSelectedItem(item)}
               />
             ))}
           </div>
@@ -164,26 +140,6 @@ export default function VideoReel() {
           </svg>
         </button>
       </div>
-
-      {selectedItem && (
-        <div className={styles.modalOverlay} onClick={() => setSelectedItem(null)}>
-          <button className={styles.closeButton} onClick={() => setSelectedItem(null)} aria-label="Close video">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <video
-              className={styles.modalVideo}
-              src={selectedItem.src}
-              autoPlay
-              controls
-              playsInline
-            />
-          </div>
-        </div>
-      )}
     </section>
   );
 }

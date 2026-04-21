@@ -1,5 +1,6 @@
 .section {
-  width: 100vw;
+  width: 100%;
+  max-width: 100%;
   padding: 80px 0;
   overflow: hidden;
   background: #000000;
@@ -22,6 +23,7 @@
 .carouselWrapper {
   position: relative;
   width: 100%;
+  max-width: 100%;
 }
 
 .navButton {
@@ -61,6 +63,8 @@
 }
 
 .viewport {
+  width: 100%;
+  max-width: 100%;
   overflow-x: auto;
   scroll-behavior: smooth;
   scrollbar-width: none; /* Firefox */
@@ -89,7 +93,7 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   background: #080808;
   transition: transform 0.3s ease, border-color 0.3s ease;
-  cursor: pointer;
+  cursor: default;
 }
 
 .card:hover {
@@ -143,85 +147,6 @@
   text-transform: uppercase;
 }
 
-@keyframes reelScroll {
-  from {
-    transform: translateX(0);
-  }
-
-  to {
-    transform: translateX(calc(-50% - 12px));
-  }
-}
-
-.modalOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(12px);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  animation: modalFadeIn 0.3s ease-out forwards;
-}
-
-.modalContent {
-  width: 100%;
-  max-width: 1200px;
-  height: 100%;
-  max-height: 80vh;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: modalScaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.modalVideo {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 12px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
-  background: #000;
-}
-
-.closeButton {
-  position: absolute;
-  top: 32px;
-  right: 32px;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(0, 0, 0, 0.5);
-  color: #fff;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  transition: all 0.2s ease;
-  z-index: 1001;
-}
-
-.closeButton:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: scale(1.05);
-}
-
-@keyframes modalFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes modalScaleIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
 @media (max-width: 768px) {
   .section {
     padding: 48px 0;
@@ -241,21 +166,6 @@
   .label {
     left: 12px;
     bottom: 12px;
-  }
-
-  .modalOverlay {
-    padding: 16px;
-  }
-
-  .closeButton {
-    top: 16px;
-    right: 16px;
-    width: 40px;
-    height: 40px;
-  }
-
-  .modalContent {
-    max-height: 60vh;
   }
 
   .navButton {

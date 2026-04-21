@@ -12,8 +12,12 @@ html {
   scroll-behavior: smooth;
 }
 
-html, body {
+html,
+body {
+  margin: 0;
+  padding: 0;
   width: 100%;
+  max-width: 100%;
   overflow-x: hidden;
 }
 
@@ -33,13 +37,22 @@ video {
   padding: 0;
 }
 
+img,
 canvas,
 video {
   display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+canvas,
+video {
   background: #000000;
 }
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
@@ -206,7 +219,7 @@ input {
 
 .hero {
   width: 100%;
-  max-width: 100vw;
+  max-width: 100%;
   overflow: hidden;
   min-height: 100vh;
   z-index: 1;

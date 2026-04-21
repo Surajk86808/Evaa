@@ -42,6 +42,7 @@ export function initSite() {
   const cleanups = [];
 
   let heroIntroStarted = false;
+  let hasPlayedChatIntro = false;
 
   const revealHeroWithoutGsap = () => {
     if (heroHeadline) {
@@ -137,6 +138,19 @@ export function initSite() {
     chatVideoWrapper?.setAttribute("aria-hidden", fullChat ? "true" : "false");
   };
 
+  const playChatLoop = ({ restart = false } = {}) => {
+    if (!chatVideo) return;
+
+    if (restart) {
+      chatVideo.currentTime = 0;
+    }
+
+    chatVideo.muted = true;
+    chatVideo.loop = true;
+    chatVideo.onended = null;
+    chatVideo.play().catch(() => {});
+  };
+
   const openChat = () => {
     chatbotModal?.classList.add("is-open");
     chatbotModal?.setAttribute("aria-hidden", "false");
@@ -144,16 +158,20 @@ export function initSite() {
     chatInput?.focus();
 
     if (!chatVideo) return;
-    chatVideo.currentTime = 0;
-    chatVideo.muted = false;
-    chatVideo.loop = false;
-    chatVideo.play().catch(() => {});
-    chatVideo.onended = () => {
-      chatVideo.muted = true;
-      chatVideo.loop = true;
+
+    if (!hasPlayedChatIntro) {
+      hasPlayedChatIntro = true;
       chatVideo.currentTime = 0;
+      chatVideo.muted = false;
+      chatVideo.loop = false;
       chatVideo.play().catch(() => {});
-    };
+      chatVideo.onended = () => {
+        playChatLoop({ restart: true });
+      };
+      return;
+    }
+
+    playChatLoop({ restart: true });
   };
 
   const closeChat = () => {
@@ -162,7 +180,7 @@ export function initSite() {
     if (!chatVideo) return;
     chatVideo.pause();
     chatVideo.muted = true;
-    chatVideo.loop = false;
+    chatVideo.loop = true;
     chatVideo.currentTime = 0;
     chatVideo.onended = null;
   };
@@ -675,20 +693,9 @@ function initHeroCanvas(cleanups) {
   maskScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), maskMaterial));
 
   const textureLoader = new THREE.TextureLoader();
-  const fitCover = (mesh, texture) => {
-    const imgW = texture.image.width;
-    const imgH = texture.image.height;
-    const imgAspect = imgW / imgH;
-    const viewAspect = window.innerWidth / window.innerHeight;
-    const scale = Math.max(viewAspect / imgAspect, imgAspect / viewAspect);
-    void scale;
-
-    if (viewAspect > imgAspect) {
-      mesh.scale.set(1, imgAspect / viewAspect, 1);
-    } else {
-      mesh.scale.set(viewAspect / imgAspect, 1, 1);
-    }
-
+  const fitCover = (mesh) => {
+    // The shader handles cover-cropping, so the plane should always fill the viewport.
+    mesh.scale.set(1, 1, 1);
     mesh.position.set(0, 0, 0);
   };
 
@@ -727,6 +734,21 @@ function initHeroCanvas(cleanups) {
 
   const HERO_DESKTOP_IMAGE_ASPECT = 2752 / 1536;
   const HERO_PORTRAIT_IMAGE_ASPECT = 1536 / 2752;
+  const getHeroFrame = (portrait) => {
+    // Keep the portrait crop slightly tighter so the source watermark
+    // stays off-canvas on phones without needing a visual cover patch.
+    if (portrait) {
+      return {
+        zoom: 1.05,
+        offsetY: 0.03
+      };
+    }
+
+    return {
+      zoom: 0.94,
+      offsetY: 0.02
+    };
+  };
   const getHeroSources = (portrait) => ({
     dottedSrc: portrait ? "/photos/dotted-mobile.png" : "/photos/dotted.png",
     realSrc: portrait ? "/photos/real-mobile.png" : "/photos/real.png",
@@ -751,6 +773,7 @@ function initHeroCanvas(cleanups) {
     let activeTextureMode = isPortraitMobile ? "portrait" : "landscape";
 
     const initialSources = getHeroSources(isPortraitMobile);
+    const initialFrame = getHeroFrame(isPortraitMobile);
 
     const material = new THREE.ShaderMaterial({
       uniforms: {
@@ -759,8 +782,8 @@ function initHeroCanvas(cleanups) {
         texMask: { value: maskRead.texture },
         uAspectCanvas: { value: window.innerWidth / window.innerHeight },
         uAspectImage: { value: initialSources.imageAspect },
-        uMobileZoom: { value: 1.0 },
-        uMobileOffsetY: { value: 0.0 },
+        uMobileZoom: { value: initialFrame.zoom },
+        uMobileOffsetY: { value: initialFrame.offsetY },
         dottedOffset: { value: new THREE.Vector2(0, 0) },
         realOffset: { value: new THREE.Vector2(0, 0) },
         dottedScale: { value: 1 },
@@ -768,28 +791,33 @@ function initHeroCanvas(cleanups) {
       },
       vertexShader: "varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }",
       fragmentShader:
-        "uniform sampler2D texDotted; uniform sampler2D texReal; uniform sampler2D texMask; uniform vec2 dottedOffset; uniform vec2 realOffset; uniform float dottedScale; uniform float realScale; uniform float uAspectCanvas; uniform float uAspectImage; uniform float uMobileZoom; uniform float uMobileOffsetY; varying vec2 vUv; void main(){ vec2 uv=vUv; float canvasAspect=uAspectCanvas; float imageAspect=uAspectImage; vec2 scale=vec2(1.0); if(canvasAspect>imageAspect){ scale.y=imageAspect/canvasAspect; } else { scale.x=canvasAspect/imageAspect; } vec2 coveredUV=(uv-0.5)/scale+0.5; coveredUV=clamp(coveredUV,0.0,1.0); vec2 baseUv=(coveredUV-0.5)/uMobileZoom+0.5; baseUv.y+=uMobileOffsetY; bool outsideImage=baseUv.x<0.0||baseUv.x>1.0||baseUv.y<0.0||baseUv.y>1.0; vec2 dUv=(baseUv-0.5)/dottedScale+0.5+dottedOffset; vec2 rUv=(baseUv-0.5)/realScale+0.5+realOffset; bool outsideDotted=outsideImage||dUv.x<0.0||dUv.x>1.0||dUv.y<0.0||dUv.y>1.0; bool outsideReal=outsideImage||rUv.x<0.0||rUv.x>1.0||rUv.y<0.0||rUv.y>1.0; vec4 dotted=outsideDotted?vec4(0.0,0.0,0.0,1.0):texture2D(texDotted,dUv); vec4 real=outsideReal?vec4(0.0,0.0,0.0,1.0):texture2D(texReal,rUv); float mask=texture2D(texMask,vUv).r; float blend=smoothstep(0.15,0.65,mask); gl_FragColor=vec4(mix(dotted.rgb,real.rgb,blend),1.0); }"
+        "uniform sampler2D texDotted; uniform sampler2D texReal; uniform sampler2D texMask; uniform vec2 dottedOffset; uniform vec2 realOffset; uniform float dottedScale; uniform float realScale; uniform float uAspectCanvas; uniform float uAspectImage; uniform float uMobileZoom; uniform float uMobileOffsetY; varying vec2 vUv; void main(){ vec2 uv=vUv; float canvasAspect=uAspectCanvas; float imageAspect=uAspectImage; vec2 coverWindow=vec2(1.0); if(canvasAspect>imageAspect){ coverWindow.y=imageAspect/canvasAspect; } else { coverWindow.x=canvasAspect/imageAspect; } vec2 coveredUV=(uv-0.5)*coverWindow+0.5; vec2 baseUv=(coveredUV-0.5)/uMobileZoom+0.5; baseUv.y+=uMobileOffsetY; bool outsideImage=baseUv.x<0.0||baseUv.x>1.0||baseUv.y<0.0||baseUv.y>1.0; vec2 dUv=(baseUv-0.5)/dottedScale+0.5+dottedOffset; vec2 rUv=(baseUv-0.5)/realScale+0.5+realOffset; bool outsideDotted=outsideImage||dUv.x<0.0||dUv.x>1.0||dUv.y<0.0||dUv.y>1.0; bool outsideReal=outsideImage||rUv.x<0.0||rUv.x>1.0||rUv.y<0.0||rUv.y>1.0; vec4 dotted=outsideDotted?vec4(0.0,0.0,0.0,1.0):texture2D(texDotted,dUv); vec4 real=outsideReal?vec4(0.0,0.0,0.0,1.0):texture2D(texReal,rUv); float mask=texture2D(texMask,vUv).r; float blend=smoothstep(0.15,0.65,mask); gl_FragColor=vec4(mix(dotted.rgb,real.rgb,blend),1.0); }"
     });
 
     const plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
     plane.position.set(0, 0, 0);
-    fitCover(plane, activeDottedTexture);
+    fitCover(plane);
     scene.add(plane);
     const clock = new THREE.Clock();
+    const applyHeroFrame = (portrait) => {
+      const frame = getHeroFrame(portrait);
+
+      material.uniforms.uMobileZoom.value = frame.zoom;
+      material.uniforms.uMobileOffsetY.value = frame.offsetY;
+      material.uniforms.dottedOffset.value.set(0, 0);
+      material.uniforms.realOffset.value.set(0, 0);
+      material.uniforms.dottedScale.value = 1;
+      material.uniforms.realScale.value = 1;
+    };
 
     const updateHeroTextureMode = async (portrait) => {
       const nextMode = portrait ? "portrait" : "landscape";
       const nextSources = getHeroSources(portrait);
       material.uniforms.uAspectImage.value = nextSources.imageAspect;
-      material.uniforms.uMobileZoom.value = 1.0;
-      material.uniforms.uMobileOffsetY.value = 0.0;
-      material.uniforms.dottedOffset.value.set(0, 0);
-      material.uniforms.realOffset.value.set(0, 0);
-      material.uniforms.dottedScale.value = 1;
-      material.uniforms.realScale.value = 1;
+      applyHeroFrame(portrait);
 
       if (nextMode === activeTextureMode) {
-        fitCover(plane, activeDottedTexture);
+        fitCover(plane);
         return;
       }
 
@@ -812,12 +840,8 @@ function initHeroCanvas(cleanups) {
       activeTextureMode = nextMode;
       material.uniforms.texDotted.value = activeDottedTexture;
       material.uniforms.texReal.value = activeRealTexture;
-      material.uniforms.dottedOffset.value.set(0, 0);
-      material.uniforms.realOffset.value.set(0, 0);
-      material.uniforms.uMobileOffsetY.value = 0.0;
-      material.uniforms.dottedScale.value = 1;
-      material.uniforms.realScale.value = 1;
-      fitCover(plane, activeDottedTexture);
+      applyHeroFrame(portrait);
+      fitCover(plane);
     };
 
     const handleResize = async () => {
@@ -833,12 +857,7 @@ function initHeroCanvas(cleanups) {
       maskUniforms.brushRadius.value = isMobile ? 0.4 : 0.42;
       maskUniforms.fadeSpeed.value = isMobile ? 0.34 : 0.42;
       material.uniforms.uAspectCanvas.value = window.innerWidth / window.innerHeight;
-      material.uniforms.uMobileZoom.value = 1.0;
-      material.uniforms.uMobileOffsetY.value = 0.0;
-      material.uniforms.dottedOffset.value.set(0, 0);
-      material.uniforms.realOffset.value.set(0, 0);
-      material.uniforms.dottedScale.value = 1;
-      material.uniforms.realScale.value = 1;
+      applyHeroFrame(isPortraitMobile);
       await updateHeroTextureMode(isPortraitMobile);
     };
 
@@ -861,11 +880,7 @@ function initHeroCanvas(cleanups) {
       if (event.key === "u") uniforms.uMobileOffsetY.value += 0.01;
       if (event.key === "d") uniforms.uMobileOffsetY.value -= 0.01;
       if (event.key === "r" || event.key === "R") {
-        uniforms.dottedOffset.value.set(0, 0);
-        uniforms.realOffset.value.set(0, 0);
-        uniforms.uMobileOffsetY.value = 0.0;
-        uniforms.dottedScale.value = 1;
-        uniforms.realScale.value = 1;
+        applyHeroFrame(isPortraitMobile);
       }
 
       if (event.key === "p" || event.key === "P") {
